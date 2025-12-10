@@ -1,0 +1,564 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #1a1a1a;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-layout {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 250px;
+  background: #252526;
+  border-right: 1px solid #444;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-explorer {
+  padding: 10px;
+  height: 100%;
+}
+
+.explorer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.explorer-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.add-icon {
+  cursor: pointer;
+  color: #fb0404;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin-bottom: 2px;
+}
+
+.file-item:hover {
+  background: #2a2d2e;
+}
+
+.file-item.active {
+  background: #fb0404;
+}
+
+.file-icon {
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+.delete-icon {
+  margin-left: auto;
+  opacity: 0;
+  font-size: 10px;
+}
+
+.file-item:hover .delete-icon {
+  opacity: 1;
+}
+
+.editor-tabs {
+  display: flex;
+  background: #2d2d30;
+  border-bottom: 1px solid #444;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: #2d2d30;
+  border-right: 1px solid #444;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.tab.active {
+  background: #1e1e1e;
+}
+
+.tab-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.close-icon {
+  margin-left: 8px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.close-icon:hover {
+  opacity: 1;
+}
+
+.controls {
+  padding: 10px;
+  background: #2d2d30;
+  border-bottom: 1px solid #444;
+}
+
+.controls button {
+  padding: 6px 12px;
+  background: #fb0404;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.controls button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.editor-container {
+  flex: 1;
+  background: #1e1e1e;
+}
+
+.no-file-selected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #888;
+}
+
+.bottom-panel {
+  height: 250px;
+  border-top: 1px solid #444;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-tabs {
+  display: flex;
+  background: #2d2d30;
+  border-bottom: 1px solid #444;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.tab-btn.active {
+  background: #1e1e1e;
+  color: white;
+}
+
+.panel-content {
+  flex: 1;
+  position: relative;
+}
+
+.output-container {
+  height: 100%;
+  background: #2a2a2a;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.output-container h3 {
+  margin: 0 0 10px 0;
+  color: #fb0404;
+  font-size: 14px;
+}
+
+.output-container pre {
+  background: #1a1a1a;
+  padding: 10px;
+  border-radius: 3px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  margin: 0;
+  font-size: 12px;
+}
+
+.terminal-container {
+  height: 100%;
+  background: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #2d2d30;
+  border-bottom: 1px solid #444;
+  font-size: 12px;
+}
+
+.status.connected {
+  color: #4caf50;
+}
+
+.status.disconnected {
+  color: #f44336;
+}
+
+.terminal-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-btn {
+  padding: 2px 6px;
+  background: #444;
+  border: none;
+  color: white;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.clear-btn:hover {
+  background: #555;
+}
+
+.terminal-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.terminal-output pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.terminal-input-container {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-top: 1px solid #444;
+  background: #2a2a2a;
+}
+
+.prompt {
+  color: #4caf50;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  outline: none;
+}
+
+.terminal-input:disabled {
+  opacity: 0.5;
+}
+
+.status-bar {
+  height: 24px;
+  background: #007acc;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 12px;
+  border-top: 1px solid #444;
+}
+
+.status-left,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-item.loading {
+  color: #ffeb3b;
+}
+
+.tab-btn:hover {
+  background: #3c3c3c;
+}
+
+.controls button:hover {
+  background: #e60000;
+}
+
+.file-item:hover .delete-icon {
+  opacity: 1;
+  color: #f44336;
+}
+
+.close-icon:hover {
+  color: #f44336;
+}
+
+.add-icon:hover {
+  color: #ff6b6b;
+}
+
+.welcome-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #1e1e1e;
+}
+
+.welcome-content {
+  text-align: center;
+  max-width: 600px;
+  padding: 40px;
+}
+
+.welcome-content h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #fb0404;
+}
+
+.welcome-icon {
+  font-size: 32px;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  color: #ccc;
+}
+
+.quick-start h3 {
+  margin-bottom: 16px;
+  color: #fb0404;
+}
+
+.sample-files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sample-btn {
+  padding: 12px 16px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sample-btn:hover {
+  background: #fb0404;
+  border-color: #fb0404;
+}
+
+.right-sidebar {
+  width: 350px;
+  background: #252526;
+  border-left: 1px solid #444;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-chat {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #444;
+  gap: 8px;
+}
+
+.chat-header h3 {
+  margin: 0;
+  font-size: 14px;
+  flex: 1;
+}
+
+.chat-icon {
+  color: #fb0404;
+}
+
+.review-btn {
+  padding: 4px 8px;
+  background: #fb0404;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.review-btn:disabled {
+  opacity: 0.6;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px;
+  max-height: calc(100vh - 300px);
+  position: relative;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 15px;
+  gap: 8px;
+}
+
+.message-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.message.user .message-icon {
+  background: #fb0404;
+}
+
+.message.ai .message-icon {
+  background: #0078d4;
+}
+
+.message-content {
+  flex: 1;
+  background: #2a2a2a;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.message-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+
+.message.loading .message-content {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.chat-input {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #444;
+  gap: 8px;
+}
+
+.chat-input textarea {
+  flex: 1;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 8px;
+  color: white;
+  font-size: 12px;
+  resize: none;
+  height: 60px;
+}
+
+.chat-input button {
+  background: #fb0404;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.chat-input button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
