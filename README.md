@@ -1,12 +1,14 @@
 # Code Review Buddy 🚀
 
-A modern code review tool built with React and Node.js that helps developers review code efficiently with AI assistance.
+A modern web-based IDE and code review tool with Docker-powered sandboxing, AI assistance, and real-time collaboration features.
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, Vite, Monaco Editor
-- **Backend**: Node.js, Express.js, Socket.io
-- **AI Integration**: Groq API
+- **Frontend**: React 18, Vite, Monaco Editor, Socket.IO Client
+- **Backend**: Node.js, Express.js, Socket.IO
+- **Containerization**: Docker (isolated sandbox environments)
+- **AI Integration**: Groq API (Llama 3.1)
+- **Code Execution**: PISTON API
 - **Styling**: CSS3
 
 ## 📋 Prerequisites
@@ -14,6 +16,7 @@ A modern code review tool built with React and Node.js that helps developers rev
 Before you begin, ensure you have the following installed:
 - [Node.js](https://nodejs.org/) (version 16 or higher)
 - [npm](https://www.npmjs.com/) (comes with Node.js)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (required for sandboxing)
 - [Git](https://git-scm.com/)
 - [VS Code](https://code.visualstudio.com/) (recommended)
 
@@ -47,25 +50,39 @@ npm install
 cd ..
 ```
 
-### 4. Environment Setup
+### 4. Docker Setup
 
-1. **Get your Groq API key**:
+1. **Start Docker Desktop** and ensure it's running
+
+2. **Build the sandbox image**:
+   ```bash
+   cd backend
+   docker build -t code-sandbox:latest .
+   ```
+
+### 5. Environment Setup
+
+1. **Get your Groq API key** (optional - mock AI works without it):
    - Visit [Groq Console](https://console.groq.com/keys)
    - Sign up/Login and create a new API key
 
 2. **Create environment file**:
    ```bash
    cd backend
-   cp .env.example .env
+   touch .env
    ```
 
 3. **Add your API key** to `backend/.env`:
    ```env
+   # For real AI (optional)
    GROQ_API_KEY=your_actual_api_key_here
    USE_MOCK_AI=false
+   
+   # For mock AI (works without API key)
+   USE_MOCK_AI=true
    ```
 
-### 5. Start the Application
+### 6. Start the Application
 
 From the root directory:
 ```bash
@@ -95,6 +112,21 @@ npm run dev
 cd backend
 npm run dev
 ```
+
+## 🐳 Docker Architecture
+
+### Isolated Sandbox Environment
+- Each user session gets a dedicated Docker container
+- Complete isolation from host system
+- Pre-installed with Python, Node.js, Java, C++, and development tools
+- Automatic cleanup when session ends
+
+### Security Features
+- **Process Isolation**: Container processes can't affect host
+- **Filesystem Isolation**: No access to host files
+- **Network Isolation**: Controlled network access
+- **Resource Limits**: CPU and memory quotas enforced
+- **User Isolation**: Runs as non-root user in container
 
 ## 📁 Project Structure
 
@@ -141,11 +173,30 @@ codeReviewBuddy/
 
 ## 🌟 Features
 
-- Real-time code review with AI assistance
-- Monaco Editor integration
-- Socket.io for real-time communication
-- Modern React UI
-- Express.js REST API
+### 🔒 Secure Development Environment
+- **Docker-powered sandboxing** - Complete isolation from host system
+- **Multi-language support** - Python, JavaScript, Java, C++, C, HTML, CSS
+- **Real-time file synchronization** - Changes in terminal instantly appear in file explorer
+- **Integrated terminal** - Full bash/PowerShell access within container
+
+### 🤖 AI-Powered Code Assistance
+- **Intelligent code review** - Groq API with Llama 3.1 model
+- **Interactive AI chat** - Context-aware conversations about your code
+- **Code suggestions** - Real-time improvement recommendations
+- **Mock AI fallback** - Works without API key for testing
+
+### 💻 Professional IDE Experience
+- **Monaco Editor** - VS Code-like editing experience
+- **Multi-file support** - Tabbed interface with file explorer
+- **Syntax highlighting** - Support for multiple programming languages
+- **Code execution** - Run code safely via PISTON API
+- **Real-time collaboration** - Socket.IO powered live updates
+
+### 🎨 Modern UI/UX
+- **VS Code-inspired design** - Familiar interface for developers
+- **Responsive layout** - Works on desktop and tablet devices
+- **Dark theme** - Easy on the eyes for long coding sessions
+- **Status bar** - Real-time information about active file and system status
 
 ## 🤝 Contributing
 
@@ -187,13 +238,78 @@ npm install
 - Check that your API key is valid
 - Restart the backend server after changing `.env`
 
+## 🔧 Docker Troubleshooting
+
+### Common Docker Issues
+
+**Docker not running:**
+```bash
+# Check Docker status
+docker --version
+docker ps
+```
+
+**Container build fails:**
+```bash
+# Clean Docker cache and rebuild
+docker system prune -f
+cd backend
+docker build -t code-sandbox:latest .
+```
+
+**Permission issues (Linux/Mac):**
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+# Logout and login again
+```
+
+**Container cleanup:**
+```bash
+# Remove all containers
+docker container prune -f
+
+# Remove sandbox image
+docker rmi code-sandbox:latest
+```
+
+## 🚀 Production Deployment
+
+### Environment Variables
+```env
+# Production settings
+NODE_ENV=production
+PORT=3000
+GROQ_API_KEY=your_production_api_key
+USE_MOCK_AI=false
+
+# Docker settings
+DOCKER_HOST=unix:///var/run/docker.sock
+CONTAINER_MEMORY_LIMIT=512m
+CONTAINER_CPU_LIMIT=0.5
+```
+
+### Security Considerations
+- Run Docker daemon in rootless mode
+- Use container resource limits
+- Implement session timeouts
+- Monitor container usage
+- Regular security updates
+
 ## 📞 Support
 
 If you encounter any issues:
-1. Check the [Issues](https://github.com/YOUR_USERNAME/codeReviewBuddy/issues) page
-2. Create a new issue with detailed description
-3. Include error messages and steps to reproduce
+1. Check Docker Desktop is running
+2. Verify all dependencies are installed
+3. Check the [Issues](https://github.com/YOUR_USERNAME/codeReviewBuddy/issues) page
+4. Create a new issue with:
+   - Error messages
+   - Docker version (`docker --version`)
+   - Node.js version (`node --version`)
+   - Steps to reproduce
 
 ---
 
-Happy coding! 🎉
+**Built with ❤️ for developers who value security and productivity**
+
+Happy coding in your secure sandbox! 🎉🐳
