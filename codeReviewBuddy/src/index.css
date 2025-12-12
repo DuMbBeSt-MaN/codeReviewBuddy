@@ -52,6 +52,22 @@ body {
   margin-bottom: 10px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.refresh-icon {
+  cursor: pointer;
+  color: #4caf50;
+  font-size: 12px;
+}
+
+.refresh-icon:hover {
+  color: #66bb6a;
+}
+
 .explorer-header h3 {
   margin: 0;
   font-size: 14px;
@@ -63,12 +79,16 @@ body {
 }
 
 .file-item {
-  display: flex;
+  display: flex !important;
   align-items: center;
   padding: 5px;
   cursor: pointer;
   border-radius: 3px;
   margin-bottom: 2px;
+  background: red !important;
+  color: white !important;
+  min-height: 25px;
+  border: 2px solid yellow !important;
 }
 
 .file-item:hover {
@@ -355,6 +375,13 @@ body {
 
 .add-icon:hover {
   color: #ff6b6b;
+}
+
+.no-files {
+  padding: 10px;
+  color: #888;
+  font-size: 12px;
+  text-align: center;
 }
 
 .welcome-screen {

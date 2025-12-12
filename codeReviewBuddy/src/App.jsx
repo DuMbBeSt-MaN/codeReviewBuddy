@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Editor from './editor.jsx'
 import FileExplorer from './components/FileExplorer.jsx'
 import EditorTabs from './components/EditorTabs.jsx'
@@ -8,23 +8,103 @@ import StatusBar from './components/StatusBar.jsx'
 import Welcome from './components/Welcome.jsx'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
+import { io } from 'socket.io-client'
 
 function App() {
-  const [files, setFiles] = useState([
-    {
-      id: uuidv4(),
-      name: 'main.py',
-      content: '# Write your code here\nprint("Hello World!")',
-      language: 'python'
-    }
-  ])
+  const [files, setFiles] = useState([])
+  const [sessionId, setSessionId] = useState(null)
   const [openFiles, setOpenFiles] = useState([])
   const [activeFile, setActiveFile] = useState(null)
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
   const [activeBottomTab, setActiveBottomTab] = useState('output')
 
-  const handleFileSelect = (file) => {
+  // Initialize session and sync files
+  useEffect(() => {
+    const socket = io('http://localhost:5000')
+    
+    socket.on('connect', () => {
+      console.log('Connected with session ID:', socket.id)
+      setSessionId(socket.id)
+    })
+    
+    // Listen for real-time file changes
+    socket.on('files-changed', (data) => {
+      console.log('Files changed:', data.files)
+      const containerFiles = data.files.map(file => ({
+        id: uuidv4(),
+        name: file.name,
+        content: '', // Will be loaded when opened
+        language: getLanguageFromExtension(file.name),
+        containerPath: file.path,
+        modified: file.modified
+      }))
+      setFiles(containerFiles)
+    })
+    
+    // Start file watching when container is ready
+    socket.on('terminal-output', (data) => {
+      if (data.includes('Sandbox ready')) {
+        setTimeout(() => {
+          socket.emit('start-file-watching')
+        }, 1000)
+      }
+    })
+    
+    return () => {
+      socket.disconnect()
+    }
+  }, [])
+
+  const refreshFiles = async (currentSessionId = sessionId) => {
+    if (!currentSessionId) return
+    
+    try {
+      const response = await axios.get(`http://localhost:5000/api/files/list?sessionId=${currentSessionId}`)
+      
+      if (response.data.success) {
+        const containerFiles = response.data.files.map(file => ({
+          id: uuidv4(),
+          name: file.name,
+          content: '', // Will be loaded when opened
+          language: getLanguageFromExtension(file.name),
+          containerPath: file.path
+        }))
+        setFiles(containerFiles);
+      }
+    } catch (error) {
+      console.error('Error refreshing files:', error)
+    }
+  }
+
+  const getLanguageFromExtension = (fileName) => {
+    const ext = fileName.split('.').pop()
+    const langMap = {
+      'py': 'python',
+      'js': 'javascript', 
+      'java': 'java',
+      'cpp': 'cpp',
+      'c': 'c',
+      'html': 'html',
+      'css': 'css'
+    }
+    return langMap[ext] || 'plaintext'
+  }
+
+  const handleFileSelect = async (file) => {
+    // Load file content from container if not already loaded
+    if (!file.content && file.containerPath) {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/files/load?sessionId=${sessionId}&fileName=${file.containerPath}`)
+        if (response.data.success) {
+          file.content = response.data.content
+        }
+      } catch (error) {
+        console.error('Error loading file:', error)
+        file.content = '// Error loading file'
+      }
+    }
+    
     if (!openFiles.find(f => f.id === file.id)) {
       setOpenFiles([...openFiles, file])
     }
@@ -39,8 +119,30 @@ function App() {
     }
   }
 
-  const handleFileCreate = (newFile) => {
-    setFiles([...files, newFile])
+  const handleFileCreate = async (newFile) => {
+    if (!sessionId) return
+    
+    try {
+      // Save file to container
+      await axios.post('http://localhost:5000/api/files/save', {
+        sessionId,
+        fileName: newFile.name,
+        content: newFile.content || ''
+      })
+      
+      // Add to local files
+      const fileWithContainer = {
+        ...newFile,
+        containerPath: newFile.name
+      }
+      setFiles([...files, fileWithContainer])
+      
+      // Refresh files to sync with container
+      setTimeout(() => refreshFiles(), 500)
+      
+    } catch (error) {
+      console.error('Error creating file:', error)
+    }
   }
 
   const handleFileDelete = (fileId) => {
@@ -48,7 +150,8 @@ function App() {
     handleFileClose(fileId)
   }
 
-  const handleCodeChange = (fileId, newContent) => {
+  const handleCodeChange = async (fileId, newContent) => {
+    // Update local state
     setFiles(files.map(f => 
       f.id === fileId ? { ...f, content: newContent } : f
     ))
@@ -57,6 +160,20 @@ function App() {
     ))
     if (activeFile?.id === fileId) {
       setActiveFile({ ...activeFile, content: newContent })
+    }
+    
+    // Save to container (debounced)
+    const file = files.find(f => f.id === fileId)
+    if (file && file.containerPath && sessionId) {
+      try {
+        await axios.post('http://localhost:5000/api/files/save', {
+          sessionId,
+          fileName: file.containerPath,
+          content: newContent
+        })
+      } catch (error) {
+        console.error('Error saving file:', error)
+      }
     }
   }
 
@@ -88,6 +205,7 @@ function App() {
             onFileCreate={handleFileCreate}
             onFileDelete={handleFileDelete}
             activeFile={activeFile}
+            onRefresh={() => refreshFiles()}
           />
         </div>
         

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { FaFile, FaFolder, FaFolderOpen, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaFile, FaFolder, FaFolderOpen, FaPlus, FaTrash, FaSync } from 'react-icons/fa';
 import { v4 as uuidv4 } from 'uuid';
 
-const FileExplorer = ({ files, onFileSelect, onFileCreate, onFileDelete, activeFile }) => {
+const FileExplorer = ({ files, onFileSelect, onFileCreate, onFileDelete, activeFile, onRefresh }) => {
+
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root']));
 
   const toggleFolder = (folderId) => {
@@ -64,10 +65,20 @@ const FileExplorer = ({ files, onFileSelect, onFileCreate, onFileDelete, activeF
     <div className="file-explorer">
       <div className="explorer-header">
         <h3>Explorer</h3>
-        <FaPlus className="add-icon" onClick={createFile} />
+        <div className="header-actions">
+          <FaSync className="refresh-icon" onClick={onRefresh} title="Refresh files" />
+          <FaPlus className="add-icon" onClick={createFile} title="Create file" />
+        </div>
       </div>
       <div className="file-tree">
-        {files.map(renderFile)}
+        {files.length === 0 ? (
+          <div className="no-files">No files found. Create files in terminal and refresh.</div>
+        ) : (
+          files.map((file, index) => {
+            console.log('Rendering file:', file);
+            return renderFile(file);
+          })
+        )}
       </div>
     </div>
   );
