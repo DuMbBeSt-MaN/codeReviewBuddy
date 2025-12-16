@@ -42,6 +42,16 @@ function App() {
       setFiles(containerFiles)
     })
     
+    // Listen for terminal file changes
+    socket.on('files-changed-from-terminal', () => {
+      refreshFiles()
+    })
+    
+    // Listen for broadcast file changes
+    socket.on('files-changed-broadcast', () => {
+      refreshFiles()
+    })
+    
     // Start file watching when container is ready
     socket.on('terminal-output', (data) => {
       if (data.includes('Sandbox ready')) {
@@ -56,11 +66,9 @@ function App() {
     }
   }, [])
 
-  const refreshFiles = async (currentSessionId = sessionId) => {
-    if (!currentSessionId) return
-    
+  const refreshFiles = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/files/list?sessionId=${currentSessionId}`)
+      const response = await axios.get(`http://localhost:5000/api/files/list`)
       
       if (response.data.success) {
         const containerFiles = response.data.files.map(file => ({
@@ -95,7 +103,7 @@ function App() {
     // Load file content from container if not already loaded
     if (!file.content && file.containerPath) {
       try {
-        const response = await axios.get(`http://localhost:5000/api/files/load?sessionId=${sessionId}&fileName=${file.containerPath}`)
+        const response = await axios.get(`http://localhost:5000/api/files/load?fileName=${file.containerPath}`)
         if (response.data.success) {
           file.content = response.data.content
         }
@@ -120,12 +128,9 @@ function App() {
   }
 
   const handleFileCreate = async (newFile) => {
-    if (!sessionId) return
-    
     try {
-      // Save file to container
+      // Save file to shared workspace
       await axios.post('http://localhost:5000/api/files/save', {
-        sessionId,
         fileName: newFile.name,
         content: newFile.content || ''
       })
@@ -162,12 +167,11 @@ function App() {
       setActiveFile({ ...activeFile, content: newContent })
     }
     
-    // Save to container (debounced)
+    // Save to shared workspace (debounced)
     const file = files.find(f => f.id === fileId)
-    if (file && file.containerPath && sessionId) {
+    if (file && file.containerPath) {
       try {
         await axios.post('http://localhost:5000/api/files/save', {
-          sessionId,
           fileName: file.containerPath,
           content: newContent
         })

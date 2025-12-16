@@ -43,6 +43,22 @@ io.on('connection', (socket) => {
     fileWatcher.startWatching(socket.id, socket);
   });
   
+  socket.on('files-changed-from-terminal', () => {
+    fileWatcher.forceRefresh(socket.id, socket);
+  });
+  
+  socket.on('files-changed-broadcast', async () => {
+    // Refresh file list for all clients
+    try {
+      const { executeCommand } = await import('./controllers/dockerManager.js');
+      const output = await executeCommand('shared-workspace', 'find /workspace -type f -exec stat -c "%n|%Y" {} \\;');
+      const files = FileSystemWatcher.parseFileList(output.trim());
+      io.emit('files-changed', { files });
+    } catch (error) {
+      console.error('Broadcast refresh error:', error);
+    }
+  });
+  
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     fileWatcher.stopWatching(socket.id);

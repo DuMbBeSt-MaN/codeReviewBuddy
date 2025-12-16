@@ -5,17 +5,60 @@ import { Readable } from 'stream';
 const docker = new Docker();
 const containers = new Map(); // Store container info per session
 
+// Cleanup any existing containers on startup
+const cleanupExistingContainers = async () => {
+  try {
+    const containerName = 'sandbox-shared-workspace';
+    const existingContainer = docker.getContainer(containerName);
+    await existingContainer.remove({ force: true });
+    console.log(`Cleaned up existing container: ${containerName}`);
+  } catch (error) {
+    // Container doesn't exist, which is fine
+  }
+};
+
+// Run cleanup on module load
+cleanupExistingContainers();
+
 export const createContainer = async (sessionId) => {
   try {
     console.log(`Creating container for session: ${sessionId}`);
     
+    // Check if container already exists
+    const containerName = `sandbox-${sessionId}`;
+    try {
+      const existingContainer = docker.getContainer(containerName);
+      const info = await existingContainer.inspect();
+      
+      if (info.State.Running) {
+        console.log(`Reusing existing running container: ${containerName}`);
+        containers.set(sessionId, {
+          container: existingContainer,
+          id: existingContainer.id,
+          created: new Date(info.Created)
+        });
+        return existingContainer;
+      } else {
+        console.log(`Starting existing stopped container: ${containerName}`);
+        await existingContainer.start();
+        containers.set(sessionId, {
+          container: existingContainer,
+          id: existingContainer.id,
+          created: new Date(info.Created)
+        });
+        return existingContainer;
+      }
+    } catch (inspectError) {
+      // Container doesn't exist, create new one
+    }
+    
     // Build image if it doesn't exist
     await buildSandboxImage();
     
-    // Create container
+    // Create new container
     const container = await docker.createContainer({
       Image: 'code-sandbox:latest',
-      name: `sandbox-${sessionId}`,
+      name: containerName,
       Tty: true,
       OpenStdin: true,
       StdinOnce: false,

@@ -1,20 +1,33 @@
 import { writeFile, readFile, executeCommand, createContainer, getContainer } from './dockerManager.js';
 
+// Cleanup shared workspace on server shutdown
+process.on('SIGINT', async () => {
+  console.log('Cleaning up shared workspace...');
+  try {
+    const { cleanupContainer } = await import('./dockerManager.js');
+    await cleanupContainer('shared-workspace');
+  } catch (error) {
+    console.error('Error cleaning up workspace:', error);
+  }
+  process.exit(0);
+});
+
 export const saveFile = async (req, res) => {
   try {
     const { sessionId, fileName, content } = req.body;
+    const workspaceId = 'shared-workspace'; // Use shared workspace
     
-    if (!sessionId || !fileName || content === undefined) {
+    if (!fileName || content === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    // Ensure container exists
-    let container = getContainer(sessionId);
+    // Ensure shared container exists
+    let container = getContainer(workspaceId);
     if (!container) {
-      container = await createContainer(sessionId);
+      container = await createContainer(workspaceId);
     }
     
-    await writeFile(sessionId, fileName, content);
+    await writeFile(workspaceId, fileName, content);
     
     res.json({ 
       success: true, 
@@ -29,19 +42,20 @@ export const saveFile = async (req, res) => {
 
 export const loadFile = async (req, res) => {
   try {
-    const { sessionId, fileName } = req.query;
+    const { fileName } = req.query;
+    const workspaceId = 'shared-workspace'; // Use shared workspace
     
-    if (!sessionId || !fileName) {
-      return res.status(400).json({ error: 'Missing sessionId or fileName' });
+    if (!fileName) {
+      return res.status(400).json({ error: 'Missing fileName' });
     }
     
-    // Ensure container exists
-    let container = getContainer(sessionId);
+    // Ensure shared container exists
+    let container = getContainer(workspaceId);
     if (!container) {
-      container = await createContainer(sessionId);
+      container = await createContainer(workspaceId);
     }
     
-    const content = await readFile(sessionId, fileName);
+    const content = await readFile(workspaceId, fileName);
     
     res.json({ 
       success: true, 
@@ -57,28 +71,20 @@ export const loadFile = async (req, res) => {
 
 export const listFiles = async (req, res) => {
   try {
-    const { sessionId } = req.query;
+    const workspaceId = 'shared-workspace'; // Use shared workspace
     
-    if (!sessionId) {
-      return res.status(400).json({ error: 'Missing sessionId' });
-    }
-    
-    // Check if container exists, if not create it
-    let container = getContainer(sessionId);
+    // Check if shared container exists, if not create it
+    let container = getContainer(workspaceId);
     if (!container) {
       try {
-        container = await createContainer(sessionId);
+        container = await createContainer(workspaceId);
       } catch (createError) {
         console.log('Container creation failed, returning empty file list');
         return res.json({ success: true, files: [] });
       }
     }
     
-    // Debug: Check what files actually exist in this container
-    const testOutput = await executeCommand(sessionId, 'ls /workspace');
-    console.log(`Files in container ${sessionId}:`, testOutput);
-    
-    const output = await executeCommand(sessionId, 'ls -la /workspace');
+    const output = await executeCommand(workspaceId, 'ls -la /workspace');
     const files = output.trim().split('\n')
       .filter(line => line.trim() && !line.startsWith('total') && !line.startsWith('d'))
       .map(line => {
@@ -102,7 +108,6 @@ export const listFiles = async (req, res) => {
     
   } catch (error) {
     console.error('Error listing files:', error);
-    // Return empty list instead of error to prevent frontend crashes
     res.json({ success: true, files: [] });
   }
 };

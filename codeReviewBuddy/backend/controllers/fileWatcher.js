@@ -27,19 +27,22 @@ class FileSystemWatcher {
 
   async checkForChanges(sessionId, socket) {
     try {
+      const workspaceId = 'shared-workspace'; // Use shared workspace
       // Get current file list with timestamps
-      const output = await executeCommand(sessionId, 'find /workspace -type f -exec stat -c "%n|%Y" {} \\;');
+      const output = await executeCommand(workspaceId, 'find /workspace -type f -exec stat -c "%n|%Y" {} \\;');
       const currentState = output.trim();
       
-      const lastState = this.lastFileStates.get(sessionId);
+      const lastState = this.lastFileStates.get(workspaceId);
       
       if (currentState !== lastState) {
-        console.log(`File changes detected for session ${sessionId}`);
-        this.lastFileStates.set(sessionId, currentState);
+        console.log(`File changes detected in shared workspace`);
+        this.lastFileStates.set(workspaceId, currentState);
         
-        // Parse files and emit update
+        // Parse files and emit update to this socket and broadcast to all
         const files = this.parseFileList(currentState);
         socket.emit('files-changed', { files });
+        // Broadcast to all other connected clients
+        socket.broadcast.emit('files-changed', { files });
       }
     } catch (error) {
       // Container might not exist yet, ignore
@@ -62,6 +65,35 @@ class FileSystemWatcher {
         };
       })
       .filter(file => file.name && !file.name.startsWith('.'));
+  }
+  
+  // Static method for external use
+  static parseFileList(output) {
+    if (!output.trim()) return [];
+    
+    return output.split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        const [fullPath, timestamp] = line.split('|');
+        const name = fullPath.split('/').pop();
+        return {
+          name,
+          path: name,
+          type: 'file',
+          modified: parseInt(timestamp) * 1000
+        };
+      })
+      .filter(file => file.name && !file.name.startsWith('.'));
+  }
+
+  async forceRefresh(sessionId, socket) {
+    try {
+      await this.checkForChanges(sessionId, socket);
+      // Also broadcast to all connected clients
+      this.io.emit('files-changed-broadcast');
+    } catch (error) {
+      console.error(`Force refresh error for ${sessionId}:`, error);
+    }
   }
 
   stopWatching(sessionId) {

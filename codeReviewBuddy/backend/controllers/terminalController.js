@@ -1,29 +1,49 @@
-import { createContainer, executeCommand, cleanupContainer } from './dockerManager.js';
+import { createContainer, executeCommand, cleanupContainer, getContainer } from './dockerManager.js';
 
 const terminals = new Map();
+const sharedContainers = new Map(); // workspace -> container mapping
+
+// File-modifying commands that should trigger file explorer refresh
+const FILE_COMMANDS = ['touch', 'echo', 'cat', 'cp', 'mv', 'rm', 'mkdir', 'rmdir', 'nano', 'vim', 'vi'];
+
+const shouldRefreshFiles = (command) => {
+  return FILE_COMMANDS.some(cmd => command.trim().startsWith(cmd)) || 
+         command.includes('>') || command.includes('>>');
+};
+
+// Get or create shared container for workspace
+const getSharedContainer = async (workspaceId) => {
+  if (!sharedContainers.has(workspaceId)) {
+    const container = await createContainer(workspaceId);
+    sharedContainers.set(workspaceId, container);
+  }
+  return sharedContainers.get(workspaceId);
+};
 
 export const createTerminal = async (socket) => {
   try {
     const sessionId = socket.id;
+    const workspaceId = 'shared-workspace'; // Single shared workspace
     
-    socket.emit('terminal-output', `🐳 Initializing secure sandbox environment...\r\n`);
+    socket.emit('terminal-output', `🐳 Connecting to workspace...\r\n`);
     
-    // Create Docker container for this session
-    const container = await createContainer(sessionId);
+    // Get or create shared container for workspace
+    const container = await getSharedContainer(workspaceId);
     
     terminals.set(sessionId, {
       container,
+      workspaceId,
       currentDir: '/workspace'
     });
     
-    socket.emit('terminal-output', `✅ Sandbox ready! You're in an isolated environment.\r\n`);
+    socket.emit('terminal-output', `✅ Connected to shared workspace!\r\n`);
     socket.emit('terminal-output', `📁 Working directory: /workspace\r\n`);
-    socket.emit('terminal-output', `🛡️ Safe to run any commands - they won't affect the host system.\r\n\r\n`);
+    socket.emit('terminal-output', `🛡️ All files are shared across the workspace.\r\n\r\n`);
     socket.emit('terminal-output', `$ `);
     
   } catch (error) {
     console.error('Error creating terminal:', error);
-    socket.emit('terminal-output', `❌ Error creating sandbox: ${error.message}\r\n`);
+    socket.emit('terminal-output', `❌ Error connecting to workspace: ${error.message}\r\n`);
     socket.emit('terminal-output', `$ `);
   }
   
@@ -61,10 +81,17 @@ export const createTerminal = async (socket) => {
           socket.emit('terminal-output', `❌ Access denied: Can only navigate within /workspace\r\n`);
         }
       } else {
-        // Execute command in container
+        // Execute command in shared container
         const fullCommand = `cd ${terminalInfo.currentDir} && ${command}`;
-        const output = await executeCommand(sessionId, fullCommand);
+        const output = await executeCommand(terminalInfo.workspaceId, fullCommand);
         socket.emit('terminal-output', output);
+        
+        // Notify file explorer if command might have changed files
+        if (shouldRefreshFiles(command)) {
+          setTimeout(() => {
+            socket.emit('files-changed-from-terminal');
+          }, 500);
+        }
       }
       
     } catch (error) {
@@ -76,9 +103,9 @@ export const createTerminal = async (socket) => {
   
   socket.on('disconnect', async () => {
     const sessionId = socket.id;
-    console.log(`Cleaning up container for session: ${sessionId}`);
+    console.log(`Terminal session disconnected: ${sessionId}`);
     
-    await cleanupContainer(sessionId);
+    // Only remove terminal session, keep shared container running
     terminals.delete(sessionId);
   });
 };
