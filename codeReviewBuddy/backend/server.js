@@ -10,6 +10,7 @@ import FileSystemWatcher from './controllers/fileWatcher.js';
 
 const app = express();
 const server = createServer(app);
+
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
@@ -31,12 +32,13 @@ const fileWatcher = new FileSystemWatcher(io);
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   
+const TERMINAL_READY_DELAY = 3000;
+
   socket.on('create-terminal', async () => {
     await createTerminal(socket);
-    // Start watching for file changes after terminal is created
     setTimeout(() => {
       fileWatcher.startWatching(socket.id, socket);
-    }, 3000);
+    }, TERMINAL_READY_DELAY);
   });
   
   socket.on('start-file-watching', () => {

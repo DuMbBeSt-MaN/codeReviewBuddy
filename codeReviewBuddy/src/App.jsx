@@ -16,6 +16,7 @@ function App() {
   const [openFiles, setOpenFiles] = useState([])
   const [activeFile, setActiveFile] = useState(null)
   const [output, setOutput] = useState('')
+  const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [activeBottomTab, setActiveBottomTab] = useState('output')
 
@@ -94,7 +95,9 @@ function App() {
       'cpp': 'cpp',
       'c': 'c',
       'html': 'html',
-      'css': 'css'
+      'css': 'css',
+      'r': 'r',
+      'R': 'r'
     }
     return langMap[ext] || 'plaintext'
   }
@@ -105,7 +108,15 @@ function App() {
       try {
         const response = await axios.get(`http://localhost:5000/api/files/load?fileName=${file.containerPath}`)
         if (response.data.success) {
+          // Convert escaped characters to actual characters
           file.content = response.data.content
+            .replace(/\\n/g, '\n')
+            .replace(/\\t/g, '\t')
+            .replace(/\\r/g, '\r')
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
         }
       } catch (error) {
         console.error('Error loading file:', error)
@@ -188,7 +199,8 @@ function App() {
     try {
       const response = await axios.post('http://localhost:5000/api/code/execute', {
         language: activeFile.language,
-        code: activeFile.content
+        code: activeFile.content,
+        stdin: input
       })
       
       const result = response.data
@@ -258,6 +270,16 @@ function App() {
             <div className="panel-content">
               {activeBottomTab === 'output' && (
                 <div className="output-container">
+                  <div className="input-section">
+                    <label>Program Input:</label>
+                    <textarea
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Enter inputs (one per line): strings, numbers, etc."
+                      rows="3"
+                      className="input-box"
+                    />
+                  </div>
                   <h3>Output:</h3>
                   <pre>{output}</pre>
                 </div>

@@ -4,12 +4,13 @@ const PISTON_API_URL = 'https://emkc.org/api/v2/piston';
 
 export const executeCode = async (req, res) => {
   try {
-    const { language, code } = req.body;
+    const { language, code, stdin } = req.body;
     
     const response = await axios.post(`${PISTON_API_URL}/execute`, {
       language,
       version: '*',
-      files: [{ content: code }]
+      files: [{ content: code }],
+      stdin: stdin || ''
     });
     
     res.json(response.data);
